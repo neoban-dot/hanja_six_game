@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한자 제작 원리 타임어택</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; touch-action: manipulation; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .pulse-text { animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); color: #ef4444; } 100% { transform: scale(1); } }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 select-none">
+
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[750px] relative border border-slate-100">
+        
+        <div id="screen-start" class="absolute inset-0 bg-blue-600 flex flex-col items-center justify-center p-6 z-30 text-white fade-in overflow-y-auto">
+            <i class="fas fa-bolt text-5xl text-yellow-300 mb-3 drop-shadow-lg mt-4"></i>
+            <h1 class="text-3xl font-black mb-1 tracking-tight">육서 타임어택</h1>
+            <p class="text-blue-100 mb-5 text-center leading-relaxed text-sm">
+                60초 동안 한자의 제작 원리를 맞춰보세요!
+            </p>
+
+            <div class="w-full space-y-3 mb-5">
+                <input type="number" id="input-id" placeholder="학번 (예: 10101)" class="w-full p-3 rounded-xl text-slate-800 text-center font-bold outline-none border-2 border-blue-400 focus:border-yellow-400 placeholder-gray-400">
+                <input type="text" id="input-name" placeholder="이름 (예: 홍길동)" class="w-full p-3 rounded-xl text-slate-800 text-center font-bold outline-none border-2 border-blue-400 focus:border-yellow-400 placeholder-gray-400">
+            </div>
+
+            <div class="w-full bg-blue-800/50 p-4 rounded-xl border border-blue-400 mb-6 text-left shadow-inner">
+                <h3 class="text-yellow-300 font-bold text-sm mb-2"><i class="fas fa-shield-alt mr-1"></i> [필수] 개인정보 수집 및 이용 안내</h3>
+                <ul class="text-xs text-blue-100 space-y-1.5 mb-4 list-disc pl-4 leading-relaxed">
+                    <li><strong>이용 목적:</strong> 개인별 수업 참여 여부 및 수업 참여 시간 확인</li>
+                    <li><strong>이용 주체:</strong> 한문 교과 담당 교사</li>
+                    <li><strong>이용 기간:</strong> <span class="text-yellow-200 font-bold">2026년 학년말까지</span> (이후 즉시 파기)</li>
+                </ul>
+                <div class="flex items-center space-x-2 bg-blue-900/60 p-3 rounded-lg border border-blue-700/50">
+                    <input type="checkbox" id="consent-checkbox" class="w-5 h-5 accent-yellow-400 cursor-pointer shrink-0">
+                    <label for="consent-checkbox" class="text-sm text-white font-bold cursor-pointer select-none">위 개인정보 제공 및 활용에 동의합니다.</label>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="bg-yellow-400 text-blue-900 w-full py-4 rounded-2xl font-black text-xl hover:bg-yellow-300 active:scale-95 transition shadow-lg mb-4">
+                도전 시작!
+            </button>
+        </div>
+
+        <div class="bg-slate-800 p-4 flex justify-between items-center text-white shadow-md z-10">
+            <div class="flex flex-col">
+                <span class="text-xs text-slate-400 font-bold">남은 시간</span>
+                <div class="text-xl font-black"><i class="fas fa-clock text-yellow-400 mr-1"></i> <span id="time-display">60</span>초</div>
+            </div>
+            <div class="flex flex-col text-right">
+                <span class="text-xs text-slate-400 font-bold">현재 점수</span>
+                <div class="text-xl font-black text-blue-300"><span id="score-display">0</span>점</div>
+            </div>
+        </div>
+
+        <div class="flex-1 p-6 flex flex-col items-center justify-center bg-slate-50 relative">
+            <p class="text-slate-500 mb-2 font-bold text-sm bg-white px-4 py-1 rounded-full shadow-sm border border-slate-200">이 글자는 어떤 원리로 만들어졌을까?</p>
+            <div id="hanja-display" class="text-9xl font-black text-slate-800 mb-8 drop-shadow-md">月</div>
+            
+            <div id="choices-container" class="grid grid-cols-2 gap-3 w-full">
+                <button onclick="checkAnswer('상형')" class="bg-white hover:bg-blue-50 border-2 border-slate-200 text-slate-700 font-black py-5 rounded-2xl text-xl active:scale-95 transition shadow-sm">상형</button>
+                <button onclick="checkAnswer('지사')" class="bg-white hover:bg-blue-50 border-2 border-slate-200 text-slate-700 font-black py-5 rounded-2xl text-xl active:scale-95 transition shadow-sm">지사</button>
+                <button onclick="checkAnswer('회의')" class="bg-white hover:bg-blue-50 border-2 border-slate-200 text-slate-700 font-black py-5 rounded-2xl text-xl active:scale-95 transition shadow-sm">회의</button>
+                <button onclick="checkAnswer('형성')" class="bg-white hover:bg-blue-50 border-2 border-slate-200 text-slate-700 font-black py-5 rounded-2xl text-xl active:scale-95 transition shadow-sm">형성</button>
+            </div>
+
+            <div id="result-container" class="hidden w-full text-center fade-in">
+                <div id="result-badge" class="inline-block px-5 py-2 rounded-full font-bold text-lg mb-4 shadow-sm">정답!</div>
+                <div class="bg-white border-2 border-slate-100 p-5 rounded-2xl text-left shadow-sm">
+                    <p class="font-black text-slate-800 mb-2 border-b border-slate-100 pb-2">정답: <span id="correct-principle" class="text-blue-600">상형</span></p>
+                    <p class="text-slate-600 text-[15px] leading-relaxed font-medium" id="explanation-text">해설이 들어갑니다.</p>
+                </div>
+                <button onclick="nextQuestion()" class="mt-5 w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 active:scale-95 transition shadow-lg text-lg">
+                    다음 한자 풀기 <i class="fas fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="screen-end" class="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 z-40 text-white hidden fade-in">
+            <i class="fas fa-stopwatch text-6xl text-red-400 mb-4 animate-bounce"></i>
+            <h2 class="text-4xl font-black mb-2 text-white">시간 종료!</h2>
+            <div class="bg-slate-800 w-full rounded-2xl p-6 text-center mt-6 mb-4 border border-slate-700">
+                <p class="text-slate-400 font-bold mb-1" id="end-student-info">홍길동 학생의 점수는?</p>
+                <p class="text-6xl font-black text-yellow-400"><span id="final-score">0</span><span class="text-2xl ml-1 text-yellow-200">점</span></p>
+                <p class="text-slate-300 mt-4 text-sm" id="final-message">수고하셨습니다!</p>
+            </div>
+            
+            <p id="save-status" class="text-yellow-400 font-bold text-sm mb-6 animate-pulse"><i class="fas fa-spinner fa-spin mr-1"></i>결과를 선생님께 전송하는 중...</p>
+            
+            <button onclick="resetGame()" class="bg-blue-500 text-white w-full py-4 rounded-2xl font-bold text-xl hover:bg-blue-400 active:scale-95 transition shadow-lg">
+                <i class="fas fa-redo mr-2"></i>다시 도전하기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ★★★ 여기에 복사한 구글 앱스 스크립트 주소를 붙여넣으세요 ★★★
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUMchCaSdM6ovongc2LDkBpkstGYBGmxz1mKmA7Yr130G97jbsV1aBDojYYnvZOS74qw/exec";
+
+        const hanjaDB = [
+            { hanja: "月", principle: "상형", desc: "🌙 반달(초승달)의 모양을 그대로 본떠서 그린 글자야." },
+            { hanja: "手", principle: "상형", desc: "🖐️ 다섯 손가락을 쫙 펴고 있는 손의 모양을 본떠서 만든 글자야." },
+            { hanja: "中", principle: "상형", desc: "🎯 깃대(또는 과녁)의 한가운데를 화살이 뚫고 지나가는 모습을 본뜬 글자야." },
+            { hanja: "高", principle: "상형", desc: "🏯 높게 지어진 누각(건물)의 모양을 본떠서 '높다'는 뜻을 나타냈어." },
+            { hanja: "北", principle: "상형", desc: "👥 두 사람이 서로 등을 맞대고 있는 모습을 본떠서 '등지다, 북쪽'을 뜻하게 되었어." },
+            { hanja: "一", principle: "지사", desc: "🔢 눈에 보이지 않는 숫자를 나무막대기(산가지)를 하나 눕혀서 기호로 표시했어." },
+            { hanja: "二", principle: "지사", desc: "🔢 나무막대기 두 개를 눕혀서 숫자 2를 기호로 표시했어." },
+            { hanja: "三", principle: "지사", desc: "🔢 나무막대기 세 개를 눕혀서 숫자 3을 기호로 표시했어." },
+            { hanja: "見", principle: "회의", desc: "👀 눈(目)과 사람(儿)이 합쳐져서, 사람이 눈으로 직접 '보다'라는 뜻이 되었어." },
+            { hanja: "左", principle: "회의", desc: "🛠️ 왼손(𠂇)에 도구(工)를 들고 있는 모습에서 '왼쪽'이라는 뜻을 만들어냈어." },
+            { hanja: "名", principle: "회의", desc: "🗣️ 어두운 저녁(夕)에는 얼굴이 안 보여서 입(口)으로 '이름'을 불러야 한다는 뜻이야." },
+            { hanja: "覺", principle: "회의", desc: "💡 보고(見) 배운(學의 변형) 것을 머릿속으로 '깨닫다'라는 뜻을 합쳐서 만들었어." },
+            { hanja: "林", principle: "회의", desc: "🌲 나무(木)와 나무(木)가 모여 울창한 '숲'을 이룬다는 뜻이야." },
+            { hanja: "休", principle: "회의", desc: "🧍‍♂️ 사람(人)이 땀을 흘리다 나무(木) 그늘 옆에 기대어 '쉰다'는 뜻이야." },
+            { hanja: "間", principle: "회의", desc: "🚪 문(門) 틈 사이로 달빛/햇빛(日/月)이 비치는 '사이(공간, 시간)'라는 뜻이야." },
+            { hanja: "問", principle: "형성", desc: "👄 뜻을 나타내는 입(口) + 소리를 나타내는 문(門)이 합쳐져 입으로 '묻다(문)'가 되었어." },
+            { hanja: "聞", principle: "형성", desc: "👂 뜻을 나타내는 귀(耳) + 소리를 나타내는 문(門)이 합쳐져 귀로 '듣다(문)'가 되었어." },
+            { hanja: "住", principle: "형성", desc: "🧍‍♂️ 뜻을 나타내는 사람(亻) + 소리를 나타내는 주인(主)이 합쳐져 사람이 '머물다(주)'가 되었어." },
+            { hanja: "材", principle: "형성", desc: "🌳 뜻을 나타내는 나무(木) + 소리를 나타내는 재주(才)가 합쳐져 나무로 만든 '재목(재)'이 되었어." },
+            { hanja: "霜", principle: "형성", desc: "🌧️ 뜻을 나타내는 비(雨) + 소리를 나타내는 서로(相)가 합쳐져 비처럼 내리는 '서리(상)'가 되었어." },
+            { hanja: "偵", principle: "형성", desc: "🕵️ 뜻을 나타내는 사람(亻) + 소리를 나타내는 곧을(貞)이 합쳐져 사람이 적을 '정탐하다(정)'가 되었어." },
+            { hanja: "物", principle: "형성", desc: "🐮 뜻을 나타내는 소(牛) + 소리를 나타내는 말(勿)이 합쳐져 여러 가지 '만물(물)'이 되었어." },
+            { hanja: "感", principle: "형성", desc: "❤️ 뜻을 나타내는 마음(心) + 소리를 나타내는 다(咸)가 합쳐져 마음으로 '느끼다(감)'가 되었어." },
+            { hanja: "探", principle: "형성", desc: "✋ 뜻을 나타내는 손(扌) + 소리를 나타내는 깊을(罙)이 합쳐져 손으로 더듬어 '찾다(탐)'가 되었어." }
+        ];
+
+        let currentQuestion = null;
+        let score = 0;
+        let timeLeft = 60;
+        let timerInterval;
+        let studentId = "";
+        let studentName = "";
+
+        // 이전에 입력한 정보 불러오기
+        window.onload = function() {
+            if(localStorage.getItem('quizId')) document.getElementById('input-id').value = localStorage.getItem('quizId');
+            if(localStorage.getItem('quizName')) document.getElementById('input-name').value = localStorage.getItem('quizName');
+        }
+
+        function startGame() {
+            studentId = document.getElementById('input-id').value.trim();
+            studentName = document.getElementById('input-name').value.trim();
+            const isConsented = document.getElementById('consent-checkbox').checked;
+
+            if(!studentId || !studentName) {
+                return alert("학번과 이름을 모두 입력해주세요!");
+            }
+
+            // ★ 동의 여부 확인 로직 추가 ★
+            if(!isConsented) {
+                return alert("개인정보 제공 및 활용에 동의하셔야 퀴즈에 참여할 수 있습니다.");
+            }
+
+            // 기기에 정보 저장
+            localStorage.setItem('quizId', studentId);
+            localStorage.setItem('quizName', studentName);
+
+            document.getElementById('screen-start').classList.add('hidden');
+            score = 0;
+            timeLeft = 60;
+            updateUI();
+            loadQuestion();
+            startTimer();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time-display').innerText = timeLeft;
+                
+                if(timeLeft <= 10) {
+                    document.getElementById('time-display').classList.add('pulse-text');
+                } else {
+                    document.getElementById('time-display').classList.remove('pulse-text');
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function updateUI() {
+            document.getElementById('score-display').innerText = score;
+            document.getElementById('time-display').innerText = timeLeft;
+        }
+
+        function loadQuestion() {
+            currentQuestion = hanjaDB[Math.floor(Math.random() * hanjaDB.length)];
+            const displayHanja = currentQuestion.hanja || currentQuestion.단어;
+            document.getElementById('hanja-display').innerText = displayHanja;
+            
+            document.getElementById('choices-container').classList.remove('hidden');
+            document.getElementById('choices-container').classList.add('grid');
+            document.getElementById('result-container').classList.add('hidden');
+        }
+
+        function checkAnswer(selectedPrinciple) {
+            pauseTimer(); 
+            
+            const isCorrect = (selectedPrinciple === currentQuestion.principle);
+            const badge = document.getElementById('result-badge');
+
+            if (isCorrect) {
+                score += 10;
+                badge.innerHTML = "<i class='fas fa-check-circle mr-1'></i> +10점 획득!";
+                badge.className = "inline-block px-5 py-2 rounded-full font-black text-lg mb-4 bg-green-100 text-green-600 border border-green-200 shadow-sm";
+            } else {
+                badge.innerHTML = "<i class='fas fa-times-circle mr-1'></i> 오답입니다!";
+                badge.className = "inline-block px-5 py-2 rounded-full font-black text-lg mb-4 bg-red-100 text-red-600 border border-red-200 shadow-sm";
+            }
+
+            updateUI();
+            document.getElementById('correct-principle').innerText = currentQuestion.principle;
+            document.getElementById('explanation-text').innerHTML = currentQuestion.desc;
+
+            document.getElementById('choices-container').classList.add('hidden');
+            document.getElementById('choices-container').classList.remove('grid');
+            document.getElementById('result-container').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            if (timeLeft > 0) {
+                loadQuestion();
+                startTimer(); 
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            pauseTimer();
+            document.getElementById('screen-end').classList.remove('hidden');
+            document.getElementById('screen-end').classList.add('flex');
+            document.getElementById('end-student-info').innerText = `${studentName} 학생의 점수는?`;
+            document.getElementById('final-score').innerText = score;
+            
+            let msg = "";
+            if(score >= 100) msg = "최고의 실력! 완벽하게 이해했네요! 🏆";
+            else if(score >= 50) msg = "아주 좋아요! 훌륭한 추리력입니다. 👍";
+            else msg = "원리를 알아가는 과정일 뿐이에요! 파이팅! 🌱";
+            document.getElementById('final-message').innerText = msg;
+
+            // 구글 시트로 데이터 전송
+            document.getElementById('save-status').innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>결과를 선생님께 전송하는 중...';
+            document.getElementById('save-status').className = 'text-yellow-400 font-bold text-sm mb-6 animate-pulse';
+
+            const now = new Date();
+            const ts = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,'0') + "-" + String(now.getDate()).padStart(2,'0') + " " + String(now.getHours()).padStart(2,'0') + ":" + String(now.getMinutes()).padStart(2,'0');
+
+            const url = `${SCRIPT_URL}?action=saveQuizResult&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}&score=${score}&timestamp=${encodeURIComponent(ts)}`;
+            
+            fetch(url).then(r=>r.json()).then(d=>{
+                document.getElementById('save-status').innerHTML = '<i class="fas fa-check-circle mr-1"></i>결과 전송 완료!';
+                document.getElementById('save-status').classList.remove('animate-pulse', 'text-yellow-400');
+                document.getElementById('save-status').classList.add('text-green-400');
+            }).catch(e=>{
+                document.getElementById('save-status').innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>전송 실패. 화면을 캡처하세요.';
+                document.getElementById('save-status').classList.replace('text-yellow-400', 'text-red-400');
+            });
+        }
+
+        function resetGame() {
+            document.getElementById('screen-end').classList.add('hidden');
+            document.getElementById('screen-end').classList.remove('flex');
+            document.getElementById('screen-start').classList.remove('hidden');
+            // 초기화 시 체크박스 다시 풀어주기 (선택사항)
+            // document.getElementById('consent-checkbox').checked = false;
+        }
+    </script>
+</body>
+</html>
